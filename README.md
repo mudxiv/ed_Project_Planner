@@ -132,24 +132,13 @@ Open `index.html` through the development server to begin using the application.
 
 ## Deployed Application
 
-**Coming soon**
+https://harmonious-rolypoly-5202b3.netlify.app
 
 The deployed version of the application will be hosted using Netlify.
 
 ## Demo Video
 
-**Coming soon**
-
-A 3–5 minute demonstration video will be provided showing:
-
-* User registration
-* User login
-* Task creation
-* Viewing tasks
-* Editing tasks
-* Deleting tasks
-* Database functionality
-* Project structure and code organization
+https://youtu.be/MfwrnYgDfmM
 
 ## GitHub Repository
 
