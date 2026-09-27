@@ -330,6 +330,18 @@ async function loadTasks() {
                 <strong>Due:</strong>
                 ${task.due_date || "No due date"}
             </p>
+
+            <button
+                class="edit-task-button"
+                data-id="${task.id}">
+                Edit
+            </button>
+
+            <button
+                class="delete-task-button"
+                data-id="${task.id}">
+                Delete
+            </button>
         `;
 
 
@@ -338,6 +350,378 @@ async function loadTasks() {
     });
 
 }
+
+
+/* =========================
+   UPDATE TASK
+========================= */
+
+async function updateTask(taskId) {
+
+    const editButton =
+        document.querySelector(
+            `.edit-task-button[data-id="${taskId}"]`
+        );
+
+    if (!editButton) {
+        return;
+    }
+
+    const taskCard =
+        editButton.closest(".task-card");
+
+    if (!taskCard) {
+        return;
+    }
+
+
+    /* Get current task */
+
+    const { data: task, error } =
+        await supabaseClient
+            .from("tasks")
+            .select("*")
+            .eq("id", taskId)
+            .single();
+
+    if (error) {
+
+        console.error(
+            "Error loading task for edit:",
+            error
+        );
+
+        return;
+    }
+
+
+    /* Change card into edit mode */
+
+    taskCard.innerHTML = `
+
+        <label>
+            Title:
+            <input
+                type="text"
+                class="edit-title"
+                value="${task.title || ""}">
+        </label>
+
+        <br><br>
+
+        <label>
+            Description:
+            <textarea
+                class="edit-description"
+            >${task.description || ""}</textarea>
+        </label>
+
+        <br><br>
+
+        <label>
+            Status:
+
+            <select class="edit-status">
+
+                <option value="todo"
+                    ${task.status === "todo" ? "selected" : ""}>
+                    Todo
+                </option>
+
+                <option value="in-progress"
+                    ${task.status === "in-progress" ? "selected" : ""}>
+                    In Progress
+                </option>
+
+                <option value="completed"
+                    ${task.status === "completed" ? "selected" : ""}>
+                    Completed
+                </option>
+
+            </select>
+
+        </label>
+
+        <br><br>
+
+        <label>
+            Priority:
+
+            <select class="edit-priority">
+
+                <option value="low"
+                    ${task.priority === "low" ? "selected" : ""}>
+                    Low
+                </option>
+
+                <option value="medium"
+                    ${task.priority === "medium" ? "selected" : ""}>
+                    Medium
+                </option>
+
+                <option value="high"
+                    ${task.priority === "high" ? "selected" : ""}>
+                    High
+                </option>
+
+            </select>
+
+        </label>
+
+        <br><br>
+
+        <label>
+            Due Date:
+
+            <input
+                type="date"
+                class="edit-due-date"
+                value="${task.due_date || ""}">
+        </label>
+
+        <br><br>
+
+        <button
+            class="save-task-button"
+            data-id="${task.id}">
+            Save
+        </button>
+
+        <button
+            class="cancel-edit-button"
+            data-id="${task.id}">
+            Cancel
+        </button>
+
+    `;
+
+}
+
+
+/* =========================
+   SAVE UPDATED TASK
+========================= */
+
+async function saveTask(taskId) {
+
+    const saveButton =
+        document.querySelector(
+            `.save-task-button[data-id="${taskId}"]`
+        );
+
+    if (!saveButton) {
+        return;
+    }
+
+    const taskCard =
+        saveButton.closest(".task-card");
+
+    if (!taskCard) {
+        return;
+    }
+
+
+    /* Get edited values */
+
+    const title =
+        taskCard
+            .querySelector(".edit-title")
+            .value
+            .trim();
+
+    const description =
+        taskCard
+            .querySelector(".edit-description")
+            .value
+            .trim();
+
+    const status =
+        taskCard
+            .querySelector(".edit-status")
+            .value;
+
+    const priority =
+        taskCard
+            .querySelector(".edit-priority")
+            .value;
+
+    const dueDate =
+        taskCard
+            .querySelector(".edit-due-date")
+            .value;
+
+
+    /* Validate title */
+
+    if (title === "") {
+
+        alert("Task title cannot be empty.");
+
+        return;
+    }
+
+
+    /* Update database */
+
+    const { data, error } =
+        await supabaseClient
+            .from("tasks")
+            .update({
+                title: title,
+                description: description,
+                status: status,
+                priority: priority,
+                due_date: dueDate || null
+            })
+            .eq("id", taskId)
+            .select();
+
+
+    /* Handle error */
+
+    if (error) {
+
+        console.error(
+            "Task update error:",
+            error
+        );
+
+        alert(
+            "Could not update task: " +
+            error.message
+        );
+
+        return;
+    }
+
+
+    /* Success */
+
+    console.log(
+        "Updated task:",
+        data
+    );
+
+
+    /* Reload task list */
+
+    loadTasks();
+
+}
+
+
+/* =========================
+   DELETE TASK
+========================= */
+
+async function deleteTask(taskId) {
+
+    const confirmed =
+        confirm("Are you sure you want to delete this task?");
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .delete()
+            .eq("id", taskId);
+
+
+    if (error) {
+
+        console.error(
+            "Task deletion error:",
+            error
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "Task deleted:",
+        taskId
+    );
+
+
+    /* Reload tasks */
+
+    loadTasks();
+
+}
+
+
+/* =========================
+   EDIT / SAVE / CANCEL / DELETE BUTTONS
+========================= */
+
+document.addEventListener("click", function (event) {
+
+    /* Edit */
+
+    if (
+        event.target.classList.contains(
+            "edit-task-button"
+        )
+    ) {
+
+        const taskId =
+            event.target.dataset.id;
+
+        updateTask(taskId);
+
+    }
+
+
+    /* Save */
+
+    if (
+        event.target.classList.contains(
+            "save-task-button"
+        )
+    ) {
+
+        const taskId =
+            event.target.dataset.id;
+
+        saveTask(taskId);
+
+    }
+
+
+    /* Cancel Edit */
+
+    if (
+        event.target.classList.contains(
+            "cancel-edit-button"
+        )
+    ) {
+
+        loadTasks();
+
+    }
+
+
+    /* Delete */
+
+    if (
+        event.target.classList.contains(
+            "delete-task-button"
+        )
+    ) {
+
+        const taskId =
+            event.target.dataset.id;
+
+        deleteTask(taskId);
+
+    }
+
+});
 
 
 /* =========================
