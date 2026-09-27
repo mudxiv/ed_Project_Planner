@@ -11,13 +11,18 @@ async function checkUser() {
         await supabaseClient.auth.getUser();
 
     if (error) {
+
         console.error("Auth error:", error);
+
         window.location.href = "login.html";
+
         return;
     }
 
     if (!user) {
+
         window.location.href = "login.html";
+
         return;
     }
 
@@ -25,7 +30,10 @@ async function checkUser() {
     console.log("User ID:", user.id);
 
     if (userInfo) {
-        userInfo.textContent = `Logged in as: ${user.email}`;
+
+        userInfo.textContent =
+            `Logged in as: ${user.email}`;
+
     }
 }
 
@@ -36,7 +44,8 @@ checkUser();
    LOGOUT
 ========================= */
 
-const logoutButton = document.getElementById("logout-button");
+const logoutButton =
+    document.getElementById("logout-button");
 
 if (logoutButton) {
 
@@ -46,18 +55,21 @@ if (logoutButton) {
             await supabaseClient.auth.signOut();
 
         if (error) {
+
             console.error("Logout error:", error);
+
             return;
         }
 
         window.location.href = "login.html";
+
     });
 
 }
 
 
 /* =========================
-   CREATE TASK
+   CREATE TASK ELEMENTS
 ========================= */
 
 const newTaskButton =
@@ -111,7 +123,7 @@ if (cancelTaskButton) {
 
 
 /* =========================
-   SUBMIT TASK
+   CREATE TASK
 ========================= */
 
 if (taskForm) {
@@ -157,36 +169,6 @@ if (taskForm) {
         }
 
 
-        /* Get current session */
-
-        const { data: { session }, error: sessionError } =
-            await supabaseClient.auth.getSession();
-
-
-        /* Debug authentication */
-
-        console.log("========== TASK DEBUG ==========");
-        console.log("Auth user ID:", user.id);
-        console.log("Session user ID:", session?.user?.id);
-        console.log(
-            "IDs match:",
-            user.id === session?.user?.id
-        );
-        console.log("Session exists:", !!session);
-        console.log("================================");
-
-
-        if (sessionError) {
-
-            console.error(
-                "Session error:",
-                sessionError
-            );
-
-            return;
-        }
-
-
         /* Insert task */
 
         const { data, error } =
@@ -205,7 +187,7 @@ if (taskForm) {
                 .select();
 
 
-        /* Handle database error */
+        /* Handle error */
 
         if (error) {
 
@@ -221,7 +203,7 @@ if (taskForm) {
         }
 
 
-        /* Successful task creation */
+        /* Success */
 
         console.log(
             "Created task:",
@@ -233,6 +215,133 @@ if (taskForm) {
 
         taskForm.reset();
 
+
+        /* Refresh task list */
+
+        loadTasks();
+
     });
 
 }
+
+
+/* =========================
+   LOAD TASKS
+========================= */
+
+async function loadTasks() {
+
+    const taskList =
+        document.getElementById("task-list");
+
+    if (!taskList) {
+        return;
+    }
+
+
+    /* Get authenticated user */
+
+    const { data: { user }, error: userError } =
+        await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+
+        console.error(
+            "Could not get user:",
+            userError
+        );
+
+        return;
+    }
+
+
+    /* Get user's tasks */
+
+    const { data: tasks, error } =
+        await supabaseClient
+            .from("tasks")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", {
+                ascending: false
+            });
+
+
+    /* Handle database error */
+
+    if (error) {
+
+        console.error(
+            "Error loading tasks:",
+            error
+        );
+
+        taskList.innerHTML =
+            "<p>Could not load tasks.</p>";
+
+        return;
+    }
+
+
+    /* No tasks */
+
+    if (tasks.length === 0) {
+
+        taskList.innerHTML =
+            "<p>No tasks yet.</p>";
+
+        return;
+    }
+
+
+    /* Clear existing tasks */
+
+    taskList.innerHTML = "";
+
+
+    /* Display tasks */
+
+    tasks.forEach(function (task) {
+
+        const taskElement =
+            document.createElement("div");
+
+        taskElement.classList.add("task-card");
+
+
+        taskElement.innerHTML = `
+            <h3>${task.title}</h3>
+
+            <p>
+                ${task.description || ""}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                ${task.status}
+            </p>
+
+            <p>
+                <strong>Priority:</strong>
+                ${task.priority}
+            </p>
+
+            <p>
+                <strong>Due:</strong>
+                ${task.due_date || "No due date"}
+            </p>
+        `;
+
+
+        taskList.appendChild(taskElement);
+
+    });
+
+}
+
+
+/* =========================
+   INITIAL LOAD
+========================= */
+
+loadTasks();
